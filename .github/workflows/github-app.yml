@@ -1,6 +1,9 @@
 name: Create deployments with GitHub App
 
 on:
+  pull_request:
+    branches: ["main"]
+
   workflow_dispatch:
     inputs:
       environment:
@@ -43,13 +46,29 @@ jobs:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
 
+      - name: Get environment name
+        id: get-environment-name
+        run: "echo environment=${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || inputs.environment }} >> $GITHUB_OUTPUT"
+
+      - name: Get deployment status
+        id: get-deployment-status
+        run: "echo status=${{ github.event_name == 'pull_request' && 'success' || inputs.deployment_status }} >> $GITHUB_OUTPUT"
+
+      - name: Get log url
+        id: get-log-url
+        run: "echo log_url=${{ github.event_name == 'pull_request' && 'https://team-github.testoctopus.app' || inputs.log_url }} >> $GITHUB_OUTPUT"
+
+      - name: Get environment url
+        id: get-environment-url
+        run: "echo environment_url=${{ github.event_name == 'pull_request' && 'https://example.com' || inputs.environment_url }} >> $GITHUB_OUTPUT"
+
       - name: Create deployment
         id: create-deployment
-        run: 'echo deploymentid=$(gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/${{ github.repository }}/deployments -F "ref=${{ github.event.pull_request.head.sha || github.sha }}" -F "description=Deployed by Octopus" -F "environment=${{ inputs.environment }}" -F "auto_merge=false" --jq ".id")  >> $GITHUB_OUTPUT'
+        run: 'echo deploymentid=$(gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/${{ github.repository }}/deployments -F "ref=${{ github.event.pull_request.head.sha || github.sha }}" -F "description=Deployed by Octopus" -F "environment=${{ steps.get-environment-name.outputs.environment }}" -F "auto_merge=false" -F "required_contexts[]" --jq ".id")  >> $GITHUB_OUTPUT'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
       - name: Set deployment status
-        run: 'gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/${{ github.repository }}/deployments/${{ steps.create-deployment.outputs.deploymentid }}/statuses -f "environment=${{ inputs.environment }}" -f "state=${{ inputs.deployment_status }}" -f "log_url=${{ inputs.log_url }}" -f "description=Deployment to environment ${{ steps.create-deployment.outputs.deploymentid }}." -f "environment_url=${{ inputs.environment_url }}" -F "auto_inactive=false"'
+        run: 'gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/${{ github.repository }}/deployments/${{ steps.create-deployment.outputs.deploymentid }}/statuses -f "environment=${{ steps.get-environment-name.outputs.environment }}" -f "state=${{ steps.get-deployment-status.outputs.status }}" -f "log_url=${{ steps.get-log-url.outputs.log_url }}" -f "description=Deployment to environment ${{ steps.create-deployment.outputs.deploymentid }}." -f "environment_url=${{ steps.get-environment-url.outputs.environment_url }}" -F "auto_inactive=false"'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
