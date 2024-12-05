@@ -33,7 +33,8 @@ on:
         default: https://team-github.testoctopus.app
 
 jobs:
-  development:
+  deploy:
+    name: Create deployment with GitHub App
     runs-on: ubuntu-latest
     steps:
       - uses: actions/create-github-app-token@v1
