@@ -64,7 +64,7 @@ jobs:
 
       - name: Create deployment
         id: create-deployment
-        run: 'echo deploymentid=$(gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/${{ github.repository }}/deployments -F "ref=${{ github.event.pull_request.head.sha || github.sha }}" -F "description=Deployed by Octopus" -F "environment=${{ steps.get-environment-name.outputs.environment }}" -F "auto_merge=false" --jq ".id")  >> $GITHUB_OUTPUT'
+        run: 'echo deploymentid=$(gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/${{ github.repository }}/deployments -F "ref=${{ github.event.pull_request.head.sha || github.sha }}" -F "description=Deployed by Octopus" -F "environment=${{ steps.get-environment-name.outputs.environment }}" -F "auto_merge=false" -F "required_contexts[]" --jq ".id")  >> $GITHUB_OUTPUT'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
