@@ -48,7 +48,7 @@ jobs:
 
       - name: Get environment name
         id: get-environment-name
-        run: "echo environment=${{ github.event_name == 'pull_request' && format('pr-', github.event.pull_request.number) || inputs.environment }} >> $GITHUB_OUTPUT"
+        run: "echo environment=${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || inputs.environment }} >> $GITHUB_OUTPUT"
 
       - name: Get deployment status
         id: get-deployment-status
