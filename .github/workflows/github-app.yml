@@ -62,9 +62,13 @@ jobs:
         id: get-environment-url
         run: "echo environment_url=${{ github.event_name == 'pull_request' && 'https://example.com' || inputs.environment_url }} >> $GITHUB_OUTPUT"
 
+      - name: Get transient environment
+        id: get-transient-environment
+        run: "echo transient_environment=${{ github.event_name == 'pull_request' && 'true' || 'false' }} >> $GITHUB_OUTPUT"
+
       - name: Create deployment
         id: create-deployment
-        run: 'echo deploymentid=$(gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/${{ github.repository }}/deployments -F "ref=${{ github.event.pull_request.head.sha || github.sha }}" -F "description=Deployed by Octopus" -F "environment=${{ steps.get-environment-name.outputs.environment }}" -F "auto_merge=false" -F "required_contexts[]" --jq ".id")  >> $GITHUB_OUTPUT'
+        run: 'echo deploymentid=$(gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" /repos/${{ github.repository }}/deployments -F "ref=${{ github.event.pull_request.head.sha || github.sha }}" -F "description=Deployed by Octopus" -F "environment=${{ steps.get-environment-name.outputs.environment }}" -F "auto_merge=false" -F "required_contexts[]" -F "transient_environment=${{ steps.get-transient-environment.outputs.transient_environment }}" --jq ".id")  >> $GITHUB_OUTPUT'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
